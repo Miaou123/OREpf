@@ -1,0 +1,96 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+@layer base {
+  * {
+    margin: 0;
+    padding: 0;
+    box-sizing: border-box;
+  }
+
+  body {
+    font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+    background: #0a0a0a;
+    color: #ffffff;
+    min-height: 100vh;
+  }
+}
+
+@layer utilities {
+  /* Token/Sol Icons */
+  .token-icon {
+    width: 20px;
+    height: 20px;
+    background: linear-gradient(135deg, #9D4AE2, #4A90E2);
+    border-radius: 50%;
+  }
+
+  .sol-icon {
+    width: 20px;
+    height: 20px;
+    background: linear-gradient(135deg, #4A90E2, #9D4AE2);
+    border-radius: 50%;
+  }
+
+  .small-icon {
+    width: 14px;
+    height: 14px;
+    background: linear-gradient(135deg, #4A90E2, #9D4AE2);
+    border-radius: 50%;
+  }
+
+  /* Info icon */
+  .info-icon {
+    width: 16px;
+    height: 16px;
+    background: #555;
+    border-radius: 50%;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 10px;
+    cursor: help;
+    position: relative;
+  }
+
+  .info-icon::after {
+    content: 'i';
+    color: #a0a0a0;
+  }
+
+  /* Winning/Selected square */
+  .winning {
+    border: 2px solid #FFD700 !important;
+    box-shadow: 0 0 30px rgba(255, 215, 0, 0.3) !important;
+  }
+
+  /* Split badge */
+  .split-badge {
+    background: rgba(157, 74, 226, 0.2);
+    color: #9D4AE2;
+    padding: 2px 8px;
+    border-radius: 4px;
+    font-size: 12px;
+    font-weight: 600;
+  }
+
+  /* Scrollbar styling */
+  ::-webkit-scrollbar {
+    width: 8px;
+    height: 8px;
+  }
+
+  ::-webkit-scrollbar-track {
+    background: #1a1a1a;
+  }
+
+  ::-webkit-scrollbar-thumb {
+    background: #333;
+    border-radius: 4px;
+  }
+
+  ::-webkit-scrollbar-thumb:hover {
+    background: #555;
+  }
+}
