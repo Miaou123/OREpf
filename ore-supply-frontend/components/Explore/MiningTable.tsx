@@ -2,62 +2,27 @@
 
 import { useState } from 'react'
 
-interface MiningActivity {
+interface MiningRecord {
   round: number
   block: number
-  winner: string
-  winners: number
+  result: string
+  players: number
   deployed: number
-  vaulted: number
-  winnings: number
-  motherlode: number | null
-  timeAgo: string
+  fee: number
+  distributed: number
+  winner: string
+  time: string
 }
 
-// Mock data
-const mockData: MiningActivity[] = [
-  {
-    round: 45691,
-    block: 10,
-    winner: 'HXxt...zbSt',
-    winners: 740,
-    deployed: 33.7162,
-    vaulted: 3.2045,
-    winnings: 28.8410,
-    motherlode: null,
-    timeAgo: '1 min ago'
-  },
-  {
-    round: 45690,
-    block: 23,
-    winner: 'Split',
-    winners: 612,
-    deployed: 29.4521,
-    vaulted: 2.9452,
-    winnings: 25.1234,
-    motherlode: null,
-    timeAgo: '3 min ago'
-  },
-  {
-    round: 45689,
-    block: 7,
-    winner: 'GHpx...91Kt',
-    winners: 523,
-    deployed: 27.8934,
-    vaulted: 2.7893,
-    winnings: 23.4567,
-    motherlode: 98.6,
-    timeAgo: '5 min ago'
-  },
-  // Add more mock data as needed
-]
+interface MiningTableProps {
+  data: MiningRecord[]
+}
 
-export default function MiningTable() {
-  const [sortColumn, setSortColumn] = useState<keyof MiningActivity>('round')
+export default function MiningTable({ data }: MiningTableProps) {
+  const [sortColumn, setSortColumn] = useState<string | null>(null)
   const [sortDirection, setSortDirection] = useState<'asc' | 'desc'>('desc')
-  const [data, setData] = useState(mockData)
 
-  const handleSort = (column: keyof MiningActivity) => {
+  const handleSort = (column: string) => {
     if (sortColumn === column) {
       setSortDirection(sortDirection === 'asc' ? 'desc' : 'asc')
     } else {
@@ -67,100 +32,108 @@ export default function MiningTable() {
   }
 
   return (
-    <div className="overflow-x-auto">
-      <table className="w-full">
-        <thead>
-          <tr className="border-b border-border">
+    <div className="bg-[#1a1a1a] border border-[#333] rounded-xl overflow-hidden">
+      <table className="w-full border-collapse">
+        <thead className="bg-[#252525]">
+          <tr>
             <th 
-              className="text-left py-3 px-4 text-sm font-medium text-text-secondary cursor-pointer hover:text-white"
               onClick={() => handleSort('round')}
+              className="px-4 py-4 text-left text-sm font-semibold text-[#a0a0a0] border-b border-[#333] cursor-pointer hover:text-white transition-colors"
             >
               Round
             </th>
             <th 
-              className="text-left py-3 px-4 text-sm font-medium text-text-secondary cursor-pointer hover:text-white"
               onClick={() => handleSort('block')}
+              className="px-4 py-4 text-left text-sm font-semibold text-[#a0a0a0] border-b border-[#333] cursor-pointer hover:text-white transition-colors"
             >
               Block
             </th>
-            <th className="text-left py-3 px-4 text-sm font-medium text-text-secondary">
-              ORE Winner
-            </th>
             <th 
-              className="text-left py-3 px-4 text-sm font-medium text-text-secondary cursor-pointer hover:text-white"
-              onClick={() => handleSort('winners')}
+              onClick={() => handleSort('result')}
+              className="px-4 py-4 text-left text-sm font-semibold text-[#a0a0a0] border-b border-[#333] cursor-pointer hover:text-white transition-colors"
             >
-              Winners
+              Result
             </th>
             <th 
-              className="text-left py-3 px-4 text-sm font-medium text-text-secondary cursor-pointer hover:text-white"
+              onClick={() => handleSort('players')}
+              className="px-4 py-4 text-left text-sm font-semibold text-[#a0a0a0] border-b border-[#333] cursor-pointer hover:text-white transition-colors"
+            >
+              Players
+            </th>
+            <th 
               onClick={() => handleSort('deployed')}
+              className="px-4 py-4 text-left text-sm font-semibold text-[#a0a0a0] border-b border-[#333] cursor-pointer hover:text-white transition-colors"
             >
               Deployed
             </th>
             <th 
-              className="text-left py-3 px-4 text-sm font-medium text-text-secondary cursor-pointer hover:text-white"
-              onClick={() => handleSort('vaulted')}
+              onClick={() => handleSort('fee')}
+              className="px-4 py-4 text-left text-sm font-semibold text-[#a0a0a0] border-b border-[#333] cursor-pointer hover:text-white transition-colors"
             >
-              Vaulted
+              Fee
             </th>
             <th 
-              className="text-left py-3 px-4 text-sm font-medium text-text-secondary cursor-pointer hover:text-white"
-              onClick={() => handleSort('winnings')}
+              onClick={() => handleSort('distributed')}
+              className="px-4 py-4 text-left text-sm font-semibold text-[#a0a0a0] border-b border-[#333] cursor-pointer hover:text-white transition-colors"
             >
-              Winnings
+              Distributed
             </th>
-            <th className="text-left py-3 px-4 text-sm font-medium text-text-secondary">
-              Motherlode
+            <th 
+              onClick={() => handleSort('winner')}
+              className="px-4 py-4 text-left text-sm font-semibold text-[#a0a0a0] border-b border-[#333] cursor-pointer hover:text-white transition-colors"
+            >
+              Winner
             </th>
-            <th className="text-right py-3 px-4 text-sm font-medium text-text-secondary">
+            <th 
+              onClick={() => handleSort('time')}
+              className="px-4 py-4 text-left text-sm font-semibold text-[#a0a0a0] border-b border-[#333] cursor-pointer hover:text-white transition-colors"
+            >
               Time
             </th>
           </tr>
         </thead>
         <tbody>
-          {data.map((row, index) => (
+          {data.map((row) => (
             <tr 
-              key={index} 
-              className="border-b border-border hover:bg-surface-elevated transition-colors"
+              key={row.round} 
+              className="border-b border-[#333] last:border-b-0 hover:bg-[#252525] transition-colors"
             >
-              <td className="py-3 px-4 font-bold">#{row.round}</td>
-              <td className="py-3 px-4">#{row.block}</td>
-              <td className="py-3 px-4">
-                {row.winner === 'Split' ? (
-                  <span className="px-2 py-1 bg-accent-purple/20 text-accent-purple rounded text-xs font-medium">
-                    Split
-                  </span>
+              <td className="px-4 py-4 text-sm font-mono text-[#9D4AE2]">
+                #{row.round.toLocaleString()}
+              </td>
+              <td className="px-4 py-4 text-sm">#{row.block}</td>
+              <td className="px-4 py-4 text-sm">
+                {row.result === 'Split' ? (
+                  <span className="split-badge">Split</span>
                 ) : (
-                  <span className="font-mono text-sm">{row.winner}</span>
+                  <span className="font-mono text-[#a0a0a0]">{row.result}</span>
                 )}
               </td>
-              <td className="py-3 px-4">{row.winners}</td>
-              <td className="py-3 px-4">
-                <span className="text-accent-blue">≡</span> {row.deployed.toFixed(4)}
+              <td className="px-4 py-4 text-sm">{row.players}</td>
+              <td className="px-4 py-4 text-sm">
+                <div className="flex items-center gap-1">
+                  <div className="small-icon"></div>
+                  <span>{row.deployed.toFixed(4)}</span>
+                </div>
               </td>
-              <td className="py-3 px-4">
-                <span className="text-accent-blue">≡</span> {row.vaulted.toFixed(4)}
+              <td className="px-4 py-4 text-sm">
+                <div className="flex items-center gap-1">
+                  <div className="small-icon"></div>
+                  <span>{row.fee.toFixed(4)}</span>
+                </div>
               </td>
-              <td className="py-3 px-4">
-                <span className="text-accent-blue">≡</span> {row.winnings.toFixed(4)}
+              <td className="px-4 py-4 text-sm">
+                <div className="flex items-center gap-1">
+                  <div className="small-icon"></div>
+                  <span>{row.distributed.toFixed(4)}</span>
+                </div>
               </td>
-              <td className="py-3 px-4">
-                {row.motherlode ? `${row.motherlode} ORE` : '–'}
-              </td>
-              <td className="py-3 px-4 text-right text-text-secondary">
-                {row.timeAgo}
-              </td>
+              <td className="px-4 py-4 text-sm text-[#a0a0a0]">{row.winner}</td>
+              <td className="px-4 py-4 text-sm text-[#a0a0a0]">{row.time}</td>
             </tr>
           ))}
         </tbody>
       </table>
-      
-      <div className="mt-6 text-center">
-        <button className="text-sm text-text-secondary hover:text-white transition-colors">
-          Load more
-        </button>
-      </div>
     </div>
   )
 }

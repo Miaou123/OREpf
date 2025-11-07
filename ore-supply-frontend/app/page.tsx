@@ -2,8 +2,11 @@
 
 import { useState } from 'react'
 import Header from '@/components/Header'
-import GameSquare from '@/components/Game/GameSquare'
-import DeployControls from '@/components/Game/DeployControls'
+import GameGrid from '@/components/Game/GameGrid'
+import Motherlode from '@/components/Game/Motherlode'
+import Timer from '@/components/Game/Timer'
+import Stats from '@/components/Game/Stats'
+import DeploymentControls from '@/components/Game/DeploymentControls'
 
 // Mock data matching the HTML
 const mockSquares = [
@@ -46,64 +49,32 @@ export default function Home() {
     )
   }
 
+  const handleDeploy = (amount: number, blocks: number) => {
+    console.log(`Deploying ${amount} SOL to ${blocks} blocks`)
+    // Add your deployment logic here
+  }
+
   return (
     <>
       <Header />
-      <main className="mt-[72px] px-4 sm:px-8 py-8 sm:py-12 grid grid-cols-1 lg:grid-cols-[1fr_400px] gap-8 max-w-[1600px] mx-auto">
+      <main className="mt-[72px] px-8 py-12 grid grid-cols-1 lg:grid-cols-[1fr_400px] gap-8 max-w-[1600px] mx-auto">
         {/* 5x5 Grid */}
-        <div className="grid grid-cols-5 gap-2 sm:gap-3 max-w-[800px] mx-auto lg:mx-0">
-          {mockSquares.map((square) => (
-            <GameSquare
-              key={square.id}
-              number={square.id}
-              sol={square.sol}
-              players={square.players}
-              isWinning={square.id === winningSquare}
-              isSelected={selectedSquares.includes(square.id)}
-              onClick={() => handleSquareClick(square.id)}
-            />
-          ))}
-        </div>
+        <GameGrid
+          squares={mockSquares}
+          selectedSquares={selectedSquares}
+          winningSquare={winningSquare}
+          onSquareClick={handleSquareClick}
+        />
 
         {/* Right Panel */}
         <aside className="flex flex-col gap-6">
-          {/* Motherlode Card */}
-          <div className="bg-gradient-to-br from-[rgba(157,74,226,0.1)] to-[rgba(74,144,226,0.1)] border-2 border-[#FFD700] rounded-xl p-6 text-center">
-            <div className="text-[36px] font-bold mb-2 flex items-center justify-center gap-2">
-              <div className="token-icon"></div>
-              <span>98.6</span>
-            </div>
-            <div className="text-sm text-[#a0a0a0]">Motherlode</div>
-          </div>
-
-          {/* Timer Card */}
-          <div className="bg-[#1a1a1a] border border-[#333] rounded-xl p-6 text-center">
-            <div className="font-mono text-2xl font-bold mb-2">00:00</div>
-            <div className="text-sm text-[#a0a0a0]">Time remaining</div>
-          </div>
-
-          {/* Stats Card */}
-          <div className="bg-[#1a1a1a] border border-[#333] rounded-xl p-6">
-            <div className="grid grid-cols-2 gap-4">
-              <div className="text-center">
-                <div className="text-lg font-bold mb-1 flex items-center justify-center gap-1">
-                  <div className="sol-icon"></div>
-                  <span>32.2714</span>
-                </div>
-                <div className="text-sm text-[#a0a0a0]">Total deployed</div>
-              </div>
-              <div className="text-center">
-                <div className="text-lg font-bold mb-1 flex items-center justify-center gap-1">
-                  <div className="sol-icon"></div>
-                  <span>0.0000</span>
-                </div>
-                <div className="text-sm text-[#a0a0a0]">You deployed</div>
-              </div>
-            </div>
-          </div>
-
-          {/* Deploy Controls Card */}
-          <DeployControls selectedBlocks={selectedSquares.length} />
+          <Motherlode amount={98.6} />
+          <Timer initialTime={0} />
+          <Stats totalDeployed={32.2714} youDeployed={0.0000} />
+          <DeploymentControls 
+            selectedBlocks={selectedSquares.length}
+            onDeploy={handleDeploy}
+          />
         </aside>
       </main>
     </>

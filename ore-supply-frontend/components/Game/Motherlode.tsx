@@ -1,17 +1,15 @@
-'use client'
-
 interface MotherlodeProps {
   amount: number
 }
 
 export default function Motherlode({ amount }: MotherlodeProps) {
   return (
-    <div className="relative bg-gradient-to-r from-accent-purple to-accent-blue rounded-xl p-6 text-center border-2 border-accent-yellow">
-      <div className="flex items-center justify-center gap-2 mb-1">
-        <span className="text-4xl font-bold">◎</span>
-        <span className="text-4xl font-bold">{amount.toFixed(1)}</span>
+    <div className="bg-gradient-to-br from-[rgba(157,74,226,0.1)] to-[rgba(74,144,226,0.1)] border-2 border-[#FFD700] rounded-xl p-6 text-center">
+      <div className="text-[36px] font-bold mb-2 flex items-center justify-center gap-2">
+        <div className="token-icon"></div>
+        <span>{amount}</span>
       </div>
-      <p className="text-sm text-text-secondary">Motherlode</p>
+      <div className="text-sm text-[#a0a0a0]">Motherlode</div>
     </div>
   )
 }

@@ -1,44 +1,28 @@
-'use client'
-
-interface StatCard {
+interface Stat {
   label: string
-  value: string
-  prefix?: string
+  value: string | number
+  icon?: 'token' | 'sol'
 }
 
-const stats: StatCard[] = [
-  {
-    label: 'Max Supply',
-    value: '5,000,000',
-    prefix: '◎'
-  },
-  {
-    label: 'Circulating Supply',
-    value: '413,399',
-    prefix: '◎'
-  },
-  {
-    label: 'Burned (7d)',
-    value: '9,060',
-    prefix: '◎'
-  },
-  {
-    label: 'Protocol Rev (7d)',
-    value: '10,067',
-    prefix: '≡'
-  }
-]
+interface StatsCardsProps {
+  stats: Stat[]
+}
 
-export default function StatsCards() {
+export default function StatsCards({ stats }: StatsCardsProps) {
   return (
     <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
       {stats.map((stat, index) => (
-        <div key={index} className="stat-card">
-          <div className="text-2xl font-bold mb-1">
-            {stat.prefix && <span className={stat.prefix === '≡' ? 'text-accent-blue' : ''}>{stat.prefix} </span>}
-            {stat.value}
+        <div 
+          key={index}
+          className="bg-[#1a1a1a] border border-[#333] rounded-xl p-8 text-center transition-all hover:border-[#555] hover:-translate-y-1"
+        >
+          <div className="text-[28px] font-bold mb-3 flex items-center justify-center gap-2">
+            {stat.icon && (
+              <div className={stat.icon === 'token' ? 'token-icon' : 'sol-icon'}></div>
+            )}
+            <span>{stat.value}</span>
           </div>
-          <p className="text-sm text-text-secondary">{stat.label}</p>
+          <div className="text-sm text-[#a0a0a0]">{stat.label}</div>
         </div>
       ))}
     </div>

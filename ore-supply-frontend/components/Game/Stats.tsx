@@ -1,22 +1,26 @@
-'use client'
+interface StatsProps {
+  totalDeployed: number
+  youDeployed: number
+}
 
-export default function Stats() {
+export default function Stats({ totalDeployed, youDeployed }: StatsProps) {
   return (
-    <div className="grid grid-cols-2 gap-4">
-      <div className="card text-center">
-        <div className="flex items-center justify-center gap-2 mb-1">
-          <span className="text-accent-blue">≡</span>
-          <span className="text-lg font-bold">32.2714</span>
+    <div className="bg-[#1a1a1a] border border-[#333] rounded-xl p-6">
+      <div className="grid grid-cols-2 gap-4">
+        <div className="text-center">
+          <div className="text-lg font-bold mb-1 flex items-center justify-center gap-1">
+            <div className="sol-icon"></div>
+            <span>{totalDeployed.toFixed(4)}</span>
+          </div>
+          <div className="text-sm text-[#a0a0a0]">Total deployed</div>
         </div>
-        <p className="text-sm text-text-secondary">Total deployed</p>
-      </div>
-      
-      <div className="card text-center">
-        <div className="flex items-center justify-center gap-2 mb-1">
-          <span className="text-accent-blue">≡</span>
-          <span className="text-lg font-bold">0.0000</span>
+        <div className="text-center">
+          <div className="text-lg font-bold mb-1 flex items-center justify-center gap-1">
+            <div className="sol-icon"></div>
+            <span>{youDeployed.toFixed(4)}</span>
+          </div>
+          <div className="text-sm text-[#a0a0a0]">You deployed</div>
         </div>
-        <p className="text-sm text-text-secondary">You deployed</p>
       </div>
     </div>
   )

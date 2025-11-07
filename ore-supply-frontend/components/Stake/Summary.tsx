@@ -1,50 +1,39 @@
-'use client'
-
-interface SummaryItem {
+interface SummaryStat {
   label: string
-  value: string
-  hasInfo: boolean
+  value: string | number
+  tooltip: string
+  icon?: 'token' | 'sol'
 }
 
-const summaryData: SummaryItem[] = [
-  {
-    label: 'Total deposits',
-    value: '◎ 245,612',
-    hasInfo: true
-  },
-  {
-    label: 'APR',
-    value: '21.31%',
-    hasInfo: true
-  },
-  {
-    label: 'TVL',
-    value: '$75,867,792',
-    hasInfo: true
-  }
-]
+interface SummaryProps {
+  stats: SummaryStat[]
+}
 
-export default function Summary() {
+export default function Summary({ stats }: SummaryProps) {
   return (
-    <div>
-      <h3 className="text-xl font-bold mb-4">Summary</h3>
-      <div className="space-y-3">
-        {summaryData.map((item, index) => (
-          <div key={index} className="flex justify-between items-center">
-            <div className="flex items-center gap-2">
-              <span className="text-text-secondary">{item.label}</span>
-              {item.hasInfo && (
-                <div className="group relative">
-                  <span className="text-text-muted cursor-help">ⓘ</span>
-                  <div className="absolute left-0 bottom-full mb-2 w-48 p-2 bg-surface border border-border rounded text-xs text-white opacity-0 group-hover:opacity-100 transition-opacity pointer-events-none">
-                    {item.label === 'Total deposits' && 'Total ORE staked in the protocol'}
-                    {item.label === 'APR' && 'Annual Percentage Rate - estimated yearly return'}
-                    {item.label === 'TVL' && 'Total Value Locked - USD value of all staked ORE'}
-                  </div>
-                </div>
-              )}
+    <div className="mt-16">
+      <h2 className="text-2xl font-bold mb-8">Summary</h2>
+      <div className="flex flex-col gap-6">
+        {stats.map((stat, index) => (
+          <div 
+            key={index}
+            className={`flex justify-between items-center ${
+              index < stats.length - 1 ? 'pb-6 border-b border-[#333]' : ''
+            }`}
+          >
+            <div className="flex items-center gap-2 text-base text-[#a0a0a0]">
+              <span>{stat.label}</span>
+              <span 
+                className="info-icon" 
+                title={stat.tooltip}
+              ></span>
             </div>
-            <span className="font-bold">{item.value}</span>
+            <div className="text-lg font-bold flex items-center gap-2">
+              {stat.icon && (
+                <div className={stat.icon === 'token' ? 'token-icon' : 'sol-icon'}></div>
+              )}
+              <span>{stat.value}</span>
+            </div>
           </div>
         ))}
       </div>

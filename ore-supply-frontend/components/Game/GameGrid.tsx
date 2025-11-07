@@ -1,43 +1,41 @@
 'use client'
 
-import GridSquare from './GameSquare'
-import { useGame } from '@/contexts/GameContext'
-
-interface SquareData {
-  id: number
-  sol: number
-  players: number
+interface GameGridProps {
+  squares: Array<{
+    id: number
+    sol: number
+    players: number
+  }>
+  selectedSquares: number[]
+  winningSquare: number
+  onSquareClick: (id: number) => void
 }
 
-// Mock data for now
-const mockSquares: SquareData[] = Array.from({ length: 25 }, (_, i) => ({
-  id: i + 1,
-  sol: Math.random() * 2 + 0.5,
-  players: Math.floor(Math.random() * 900) + 100
-}))
-
-export default function GameGrid() {
-  const { selectedSquares, setSelectedSquares, deployedSquares } = useGame()
-
-  const handleSquareClick = (id: number) => {
-    setSelectedSquares(
-      selectedSquares.includes(id) 
-        ? selectedSquares.filter(squareId => squareId !== id)
-        : [...selectedSquares, id]
-    )
-  }
-
+export default function GameGrid({ squares, selectedSquares, winningSquare, onSquareClick }: GameGridProps) {
   return (
-    <div className="grid grid-cols-5 gap-3">
-      {mockSquares.map((square) => (
-        <GridSquare
+    <div className="grid grid-cols-5 gap-3 max-w-[800px]">
+      {squares.map((square) => (
+        <div
           key={square.id}
-          number={square.id}
-          sol={square.sol}
-          players={square.players}
-          isSelected={selectedSquares.includes(square.id)}
-          onClick={() => handleSquareClick(square.id)}
-        />
+          onClick={() => onSquareClick(square.id)}
+          className={`bg-[#1a1a1a] border rounded-lg p-4 aspect-square flex flex-col justify-between cursor-pointer transition-all hover:border-[#555] hover:shadow-[0_0_20px_rgba(255,215,0,0.1)] ${
+            square.id === winningSquare
+              ? 'border-2 border-[#FFD700] shadow-[0_0_30px_rgba(255,215,0,0.3)]'
+              : selectedSquares.includes(square.id)
+              ? 'border-[#9D4AE2]'
+              : 'border-[#333]'
+          }`}
+        >
+          <div className="flex justify-between items-center text-xs text-[#666]">
+            <span className="font-semibold">#{square.id}</span>
+            <span className="flex items-center gap-1">
+              {square.players} 👤
+            </span>
+          </div>
+          <div className="text-center text-xl font-bold my-auto">
+            {square.sol.toFixed(4)}
+          </div>
+        </div>
       ))}
     </div>
   )

@@ -1,52 +1,48 @@
 'use client'
 
 import { useState } from 'react'
-import { useWallet } from '@solana/wallet-adapter-react'
 
-import { useGame } from '@/contexts/GameContext'
+interface DeploymentControlsProps {
+  selectedBlocks: number
+  onDeploy: (amount: number, blocks: number) => void
+}
 
-export default function DeploymentControls() {
-  const { connected } = useWallet()
-  const { selectedSquares, setDeployedSquares } = useGame()
+export default function DeploymentControls({ selectedBlocks, onDeploy }: DeploymentControlsProps) {
   const [mode, setMode] = useState<'manual' | 'auto'>('manual')
-  const [amount, setAmount] = useState(1.0)
+  const [solAmount, setSolAmount] = useState(1.0)
+
+  const incrementAmount = (value: number) => {
+    setSolAmount(prev => Math.max(0, prev + value))
+  }
+
+  const totalCost = selectedBlocks * solAmount
 
   const handleDeploy = () => {
-    if (!connected) {
-      alert('Please connect your wallet first')
-      return
+    if (selectedBlocks > 0) {
+      onDeploy(solAmount, selectedBlocks)
     }
-    // Mock deployment - in real app this would interact with Solana
-    setDeployedSquares(selectedSquares)
-    console.log('Deploying', amount, 'SOL to', selectedSquares.length, 'blocks')
   }
 
-  const incrementAmount = (increment: number) => {
-    setAmount(prev => Math.max(0.01, prev + increment))
-  }
-
-  const totalAmount = amount * selectedSquares.length
-  
   return (
-    <div className="card space-y-4">
-      {/* Manual/Auto Toggle */}
-      <div className="flex rounded-lg bg-surface-elevated p-1">
+    <div className="bg-[#1a1a1a] border border-[#333] rounded-xl p-6">
+      {/* Toggle */}
+      <div className="flex rounded-lg overflow-hidden mb-6">
         <button
           onClick={() => setMode('manual')}
-          className={`flex-1 py-2 rounded-md text-sm font-medium transition-colors ${
-            mode === 'manual' 
-              ? 'bg-surface text-white' 
-              : 'text-text-secondary hover:text-white'
+          className={`flex-1 py-2 px-4 font-semibold transition-colors ${
+            mode === 'manual'
+              ? 'bg-white text-[#0a0a0a]'
+              : 'bg-[#252525] text-[#a0a0a0] hover:bg-[#333]'
           }`}
         >
           Manual
         </button>
         <button
           onClick={() => setMode('auto')}
-          className={`flex-1 py-2 rounded-md text-sm font-medium transition-colors ${
-            mode === 'auto' 
-              ? 'bg-surface text-white' 
-              : 'text-text-secondary hover:text-white'
+          className={`flex-1 py-2 px-4 font-semibold transition-colors ${
+            mode === 'auto'
+              ? 'bg-white text-[#0a0a0a]'
+              : 'bg-[#252525] text-[#a0a0a0] hover:bg-[#333]'
           }`}
         >
           Auto
@@ -54,74 +50,67 @@ export default function DeploymentControls() {
       </div>
 
       {/* Amount Selector */}
-      <div>
-        <div className="flex justify-between items-center mb-2">
-          <label className="text-sm text-text-secondary">0 SOL</label>
-          <div className="flex gap-1">
-            <button 
+      <div className="mb-4">
+        <div className="flex justify-between items-center mb-3">
+          <div className="text-sm text-[#a0a0a0]">0 SOL</div>
+          <div className="flex gap-2">
+            <button
               onClick={() => incrementAmount(1)}
-              className="px-2 py-1 text-xs bg-surface-elevated rounded hover:bg-border transition-colors"
+              className="bg-[#252525] border border-[#333] rounded px-3 py-1 text-xs font-semibold hover:bg-[#333] transition-colors"
             >
               +1
             </button>
-            <button 
+            <button
               onClick={() => incrementAmount(0.1)}
-              className="px-2 py-1 text-xs bg-surface-elevated rounded hover:bg-border transition-colors"
+              className="bg-[#252525] border border-[#333] rounded px-3 py-1 text-xs font-semibold hover:bg-[#333] transition-colors"
             >
               +0.1
             </button>
-            <button 
+            <button
               onClick={() => incrementAmount(0.01)}
-              className="px-2 py-1 text-xs bg-surface-elevated rounded hover:bg-border transition-colors"
+              className="bg-[#252525] border border-[#333] rounded px-3 py-1 text-xs font-semibold hover:bg-[#333] transition-colors"
             >
               +0.01
             </button>
           </div>
         </div>
-        
+
         {/* SOL Input */}
-        <div className="relative">
-          <div className="absolute left-3 top-1/2 -translate-y-1/2 text-accent-blue">
-            ≡
+        <div className="bg-[#252525] border border-[#333] rounded-lg p-4 flex items-center justify-between mb-4">
+          <div className="flex items-center gap-2">
+            <div className="sol-icon"></div>
+            <span className="text-base mr-2">SOL</span>
+            <input
+              type="number"
+              value={solAmount}
+              onChange={(e) => setSolAmount(parseFloat(e.target.value) || 0)}
+              step="0.01"
+              min="0"
+              className="bg-transparent border-none text-white text-2xl font-bold w-[100px] outline-none"
+            />
           </div>
-          <input
-            type="number"
-            value={amount}
-            onChange={(e) => setAmount(Math.max(0.01, parseFloat(e.target.value) || 0))}
-            className="input pl-8 pr-16"
-            step="0.01"
-            min="0.01"
-          />
-          <div className="absolute right-3 top-1/2 -translate-y-1/2 text-sm text-text-secondary">
-            SOL
-          </div>
+          <div className="text-sm text-[#a0a0a0]">x{selectedBlocks}</div>
         </div>
-        
-        <div className="text-xs text-text-secondary text-right mt-1">
-          x{selectedSquares.length}
-        </div>
-      </div>
 
-      {/* Summary */}
-      <div className="space-y-1 text-sm">
-        <div className="flex justify-between">
-          <span className="text-text-secondary">Blocks:</span>
-          <span>x{selectedSquares.length}</span>
+        {/* Summary */}
+        <div className="flex justify-between mb-4 text-sm">
+          <span className="text-[#a0a0a0]">Blocks</span>
+          <span className="font-semibold">x{selectedBlocks}</span>
         </div>
-        <div className="flex justify-between">
-          <span className="text-text-secondary">Total:</span>
-          <span>{totalAmount.toFixed(4)} SOL</span>
+        <div className="flex justify-between mb-6 text-sm">
+          <span className="text-[#a0a0a0]">Total</span>
+          <span className="font-semibold">{totalCost.toFixed(2)} SOL</span>
         </div>
-      </div>
 
-      {/* Deploy Button */}
-      <button
-        onClick={handleDeploy}
-        disabled={!connected || selectedSquares.length === 0}
-        className="btn btn-primary w-full"
-      >
-        Deploy
-      </button>
+        {/* Deploy Button */}
+        <button
+          onClick={handleDeploy}
+          disabled={selectedBlocks === 0}
+          className="w-full bg-gradient-to-r from-[#9D4AE2] to-[#4A90E2] text-white border-none rounded-lg py-4 text-base font-bold cursor-pointer transition-all hover:brightness-110 hover:-translate-y-0.5 disabled:bg-[#333] disabled:text-[#666] disabled:cursor-not-allowed disabled:transform-none"
+        >
+          Deploy
+        </button>
+      </div>
     </div>
   )
 }
