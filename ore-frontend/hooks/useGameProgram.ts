@@ -29,6 +29,30 @@ interface MinerStats {
   rewards: number
 }
 
+// ============================================
+// BROWSER-COMPATIBLE BUFFER HELPERS
+// ============================================
+
+/**
+ * Write a BigInt as u64 in little-endian format (browser-compatible)
+ */
+function writeBigUInt64LE(buffer: Buffer, value: bigint, offset: number = 0): void {
+  const bigIntValue = BigInt(value)
+  for (let i = 0; i < 8; i++) {
+    buffer[offset + i] = Number((bigIntValue >> BigInt(i * 8)) & BigInt(0xff))
+  }
+}
+
+/**
+ * Write a UInt32 in little-endian format (browser-compatible)
+ */
+function writeUInt32LE(buffer: Buffer, value: number, offset: number = 0): void {
+  buffer[offset] = value & 0xff
+  buffer[offset + 1] = (value >> 8) & 0xff
+  buffer[offset + 2] = (value >> 16) & 0xff
+  buffer[offset + 3] = (value >> 24) & 0xff
+}
+
 // PDA helpers
 function getBoardPDA() {
   return PublicKey.findProgramAddressSync(
@@ -65,6 +89,16 @@ function getConfigPDA() {
   )[0]
 }
 
+// Safe conversion from BigInt to number (for lamports -> SOL)
+function lamportsToSol(lamports: bigint): number {
+  return Number(lamports) / LAMPORTS_PER_SOL
+}
+
+// Safe read of u64 as BigInt
+function readU64LE(buffer: Buffer, offset: number): bigint {
+  return buffer.readBigUInt64LE(offset)
+}
+
 export function useGameProgram() {
   const { connection } = useConnection()
   const wallet = useWallet()
@@ -78,59 +112,81 @@ export function useGameProgram() {
   const subscriptionsRef = useRef<number[]>([])
 
   // Parse board data
+  // Board struct:
+  // - discriminator: u64 (8 bytes) at offset 0
+  // - round_id: u64 (8 bytes) at offset 8
+  // - start_slot: u64 (8 bytes) at offset 16
+  // - end_slot: u64 (8 bytes) at offset 24
   const parseBoardData = (data: Buffer) => {
-    const roundId = new BN(data.slice(8, 16), 'le').toNumber()
-    const startSlot = new BN(data.slice(16, 24), 'le').toNumber()
-    const endSlot = new BN(data.slice(24, 32), 'le').toNumber()
+    const roundId = Number(readU64LE(data, 8))
+    const startSlot = Number(readU64LE(data, 16))
+    const endSlot = Number(readU64LE(data, 24))
     return { roundId, startSlot, endSlot }
   }
 
-  // Parse round data
+  // Parse round data with CORRECT offsets from round.rs
+  // Round struct:
+  // - discriminator: u64 (8 bytes) at offset 0
+  // - id: u64 (8 bytes) at offset 8
+  // - deployed: [u64; 25] (200 bytes) at offset 16
+  // - slot_hash: [u8; 32] (32 bytes) at offset 216
+  // - count: [u64; 25] (200 bytes) at offset 248
+  // - expires_at: u64 (8 bytes) at offset 448
+  // - motherlode: u64 (8 bytes) at offset 456
+  // - rent_payer: Pubkey (32 bytes) at offset 464
+  // - top_miner: Pubkey (32 bytes) at offset 496
+  // - top_miner_reward: u64 (8 bytes) at offset 528
+  // - total_deployed: u64 (8 bytes) at offset 536
+  // - total_vaulted: u64 (8 bytes) at offset 544
+  // - total_winnings: u64 (8 bytes) at offset 552
   const parseRoundData = (data: Buffer) => {
-    let offset = 8
-    const roundId = new BN(data.slice(offset, offset + 8), 'le').toNumber()
-    offset += 8
+    // Read id
+    const roundId = Number(readU64LE(data, 8))
     
-    const deployed: number[] = []
+    // Read deployed array (25 x u64)
+    const deployed: bigint[] = []
     for (let i = 0; i < 25; i++) {
-      deployed.push(new BN(data.slice(offset, offset + 8), 'le').toNumber())
-      offset += 8
+      const offset = 16 + (i * 8)
+      deployed.push(readU64LE(data, offset))
     }
     
-    offset += 32 // slot_hash
-    
+    // Read count array (25 x u64)
     const count: number[] = []
     for (let i = 0; i < 25; i++) {
-      count.push(new BN(data.slice(offset, offset + 8), 'le').toNumber())
-      offset += 8
+      const offset = 248 + (i * 8)
+      count.push(Number(readU64LE(data, offset)))
     }
     
-    // Get total_deployed (adjust offset based on your struct)
-    offset = 8 + 200 + 32 + 200 + 200 + 8 + 8 + 8
-    const totalDeployed = new BN(data.slice(offset, offset + 8), 'le').toNumber()
+    // Read motherlode at offset 456
+    const motherlode = readU64LE(data, 456)
     
-    return { roundId, deployed, count, totalDeployed }
+    // Read total_deployed at offset 536 (NOT 664!)
+    const totalDeployed = readU64LE(data, 536)
+    
+    return { roundId, deployed, count, motherlode, totalDeployed }
   }
 
   // Store last deployed amounts to detect changes
-  const lastDeployedRef = useRef<number[]>(Array(25).fill(0))
+  const lastDeployedRef = useRef<bigint[]>(Array(25).fill(BigInt(0)))
 
   // Parse treasury data
   const parseTreasuryData = (data: Buffer) => {
+    // Treasury struct varies, adjust based on your actual struct
     let offset = 8 + 8 // discriminator + balance
-    const motherlode = new BN(data.slice(offset, offset + 8), 'le').toNumber()
+    const motherlode = readU64LE(data, offset)
     return { motherlode }
   }
 
   // Parse miner data
   const parseMinerData = (data: Buffer) => {
     let offset = 8 + 32 // discriminator + authority
-    const deployed: number[] = []
+    const deployed: bigint[] = []
     for (let i = 0; i < 25; i++) {
-      deployed.push(new BN(data.slice(offset, offset + 8), 'le').toNumber())
+      deployed.push(readU64LE(data, offset))
       offset += 8
     }
-    const totalDeployed = deployed.reduce((sum, amount) => sum + amount, 0)
+    // Sum BigInts properly
+    const totalDeployed = deployed.reduce((sum, amount) => sum + amount, BigInt(0))
     return { totalDeployed }
   }
 
@@ -168,10 +224,10 @@ export function useGameProgram() {
         timeRemaining = Math.floor(slotsRemaining * 0.4)
       }
       
-      // Create squares data and detect changes
+      // Create squares data - divide BigInt first, then convert to number
       const squares = Array.from({ length: 25 }, (_, i) => ({
         id: i + 1,
-        sol: round.deployed[i] / LAMPORTS_PER_SOL,
+        sol: lamportsToSol(round.deployed[i]),
         players: round.count[i]
       }))
       
@@ -185,23 +241,27 @@ export function useGameProgram() {
       
       if (changedSquares.length > 0) {
         console.log(`🎮 MULTIPLAYER UPDATE! Squares changed: ${changedSquares.join(', ')}`)
-        console.log(`💰 Someone deployed! Total now: ${round.totalDeployed / LAMPORTS_PER_SOL} SOL`)
+        console.log(`💰 Someone deployed! Total now: ${lamportsToSol(round.totalDeployed)} SOL`)
       }
       
-      // Update last deployed amounts
+      // Update last deployed amounts (keep as BigInt)
       lastDeployedRef.current = round.deployed
       
       const newGameState: GameState = {
         roundId: board.roundId,
-        motherlode: treasury.motherlode / 1e11,
+        motherlode: lamportsToSol(round.motherlode) / 1e11, // From round.motherlode
         timeRemaining,
-        totalDeployed: round.totalDeployed / LAMPORTS_PER_SOL,
+        totalDeployed: lamportsToSol(round.totalDeployed),
         winningSquare: 0,
         squares
       }
       
       setGameState(newGameState)
-      console.log('🔄 Game state updated:', { roundId: newGameState.roundId, totalDeployed: newGameState.totalDeployed })
+      console.log('🔄 Game state updated:', { 
+        roundId: newGameState.roundId, 
+        totalDeployed: newGameState.totalDeployed,
+        motherlode: newGameState.motherlode 
+      })
       
     } catch (err: any) {
       console.error('Error updating game state:', err)
@@ -219,15 +279,15 @@ export function useGameProgram() {
       const miner = minerData
         ? parseMinerData(minerData)
         : await connection.getAccountInfo(minerPda).then(info => 
-            info ? parseMinerData(info.data) : { totalDeployed: 0 }
+            info ? parseMinerData(info.data) : { totalDeployed: BigInt(0) }
           )
       
       setMinerStats({
-        totalDeployed: miner.totalDeployed / LAMPORTS_PER_SOL,
+        totalDeployed: lamportsToSol(miner.totalDeployed),
         rewards: 0
       })
       
-      console.log('⛏️  Miner stats updated:', miner.totalDeployed / LAMPORTS_PER_SOL, 'SOL')
+      console.log('⛏️  Miner stats updated:', lamportsToSol(miner.totalDeployed), 'SOL')
       
     } catch (err: any) {
       console.log('No miner account yet (normal for new users)')
@@ -259,87 +319,53 @@ export function useGameProgram() {
       treasuryPda,
       (accountInfo) => {
         console.log('📡 Treasury account changed!')
-        updateGameState(undefined, undefined, accountInfo.data)
+        updateGameState()
       },
       'confirmed'
     )
     
     subscriptionsRef.current.push(treasurySub)
     
+    // Subscribe to miner account if wallet connected
+    if (wallet.publicKey) {
+      const minerPda = getMinerPDA(wallet.publicKey)
+      const minerSub = connection.onAccountChange(
+        minerPda,
+        (accountInfo) => {
+          console.log('📡 Miner account changed!')
+          updateMinerStats(accountInfo.data)
+        },
+        'confirmed'
+      )
+      subscriptionsRef.current.push(minerSub)
+    }
+    
     // Initial fetch
     updateGameState()
-    
-    console.log('✅ WebSocket subscriptions active')
+    if (wallet.publicKey) {
+      updateMinerStats()
+    }
     
     // Cleanup subscriptions on unmount
     return () => {
       console.log('🔌 Cleaning up WebSocket subscriptions...')
-      subscriptionsRef.current.forEach(id => {
-        connection.removeAccountChangeListener(id)
+      subscriptionsRef.current.forEach(subId => {
+        connection.removeAccountChangeListener(subId)
       })
       subscriptionsRef.current = []
     }
-  }, [connection, updateGameState])
+  }, [connection, wallet.publicKey, updateGameState, updateMinerStats])
 
-  // Subscribe to round account changes (updates when round changes)
-  useEffect(() => {
-    if (!gameState) return
-    
-    const roundPda = getRoundPDA(gameState.roundId)
-    
-    console.log(`📡 Subscribing to round ${gameState.roundId}...`)
-    
-    const roundSub = connection.onAccountChange(
-      roundPda,
-      (accountInfo) => {
-        console.log(`📡 Round ${gameState.roundId} account changed!`)
-        updateGameState(undefined, accountInfo.data)
-      },
-      'confirmed'
-    )
-    
-    subscriptionsRef.current.push(roundSub)
-    
-    return () => {
-      connection.removeAccountChangeListener(roundSub)
-    }
-  }, [gameState?.roundId, connection, updateGameState])
-
-  // Subscribe to miner account when wallet connects
-  useEffect(() => {
-    if (!wallet.publicKey) return
-    
-    const minerPda = getMinerPDA(wallet.publicKey)
-    
-    console.log('📡 Subscribing to miner account...')
-    
-    const minerSub = connection.onAccountChange(
-      minerPda,
-      (accountInfo) => {
-        console.log('📡 Miner account changed!')
-        updateMinerStats(accountInfo.data)
-      },
-      'confirmed'
-    )
-    
-    subscriptionsRef.current.push(minerSub)
-    
-    // Initial fetch
-    updateMinerStats()
-    
-    return () => {
-      connection.removeAccountChangeListener(minerSub)
-    }
-  }, [wallet.publicKey, connection, updateMinerStats])
-
-  // Manual refresh
+  // Manual refresh function
   const refreshGameState = useCallback(async () => {
     await updateGameState()
-    await updateMinerStats()
-  }, [updateGameState, updateMinerStats])
+    if (wallet.publicKey) {
+      await updateMinerStats()
+    }
+  }, [updateGameState, updateMinerStats, wallet.publicKey])
 
-  // Deploy SOL to selected squares
-  const deploy = async (squareIds: number[], solAmount: number): Promise<string> => {
+  // Deploy function
+  const deploy = async (squareIds: number[], amountPerSquare: number): Promise<string> => {
     if (!wallet.publicKey || !wallet.signTransaction) {
       throw new Error('Wallet not connected')
     }
@@ -348,30 +374,34 @@ export function useGameProgram() {
     setError(null)
 
     try {
-      console.log('🚀 Deploying:', { squareIds, solAmount })
-      
+      // Convert SOL to lamports (safe as BigInt)
+      const lamports = BigInt(Math.floor(amountPerSquare * LAMPORTS_PER_SOL))
+
+      // Convert square IDs (1-25) to a bitmask
       let squaresMask = 0
-      for (const id of squareIds) {
-        squaresMask |= (1 << (id - 1))
-      }
-      
-      const lamports = Math.floor(solAmount * LAMPORTS_PER_SOL)
-      
+      squareIds.forEach(id => {
+        const index = id - 1 // Convert to 0-indexed
+        squaresMask |= (1 << index)
+      })
+
       const boardPda = getBoardPDA()
       const minerPda = getMinerPDA(wallet.publicKey)
       
       const boardAccountInfo = await connection.getAccountInfo(boardPda)
       if (!boardAccountInfo) throw new Error('Board account not found')
       
-      const roundId = new BN(boardAccountInfo.data.slice(8, 16), 'le').toNumber()
+      const roundId = Number(readU64LE(boardAccountInfo.data, 8))
       const roundPda = getRoundPDA(roundId)
       
-      // Build instruction
+      // Build instruction data using browser-compatible helpers
       const deployDiscriminator = Buffer.from([0x07, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00])
+      
       const amountBuffer = Buffer.alloc(8)
-      amountBuffer.writeBigUInt64LE(BigInt(lamports))
+      writeBigUInt64LE(amountBuffer, lamports, 0)  // Use our browser-compatible function
+      
       const squaresBuffer = Buffer.alloc(4)
-      squaresBuffer.writeUInt32LE(squaresMask)
+      writeUInt32LE(squaresBuffer, squaresMask, 0)  // Use our browser-compatible function
+      
       const instructionData = Buffer.concat([deployDiscriminator, amountBuffer, squaresBuffer])
       
       const instruction = {
@@ -401,9 +431,6 @@ export function useGameProgram() {
       await connection.confirmTransaction({ signature, blockhash, lastValidBlockHeight })
       
       console.log('✅ Transaction confirmed!')
-      
-      // WebSocket will automatically update the state!
-      // No need to manually refresh
       
       return signature
       
