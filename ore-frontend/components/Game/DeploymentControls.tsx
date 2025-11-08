@@ -5,11 +5,16 @@ import { useState } from 'react'
 interface DeploymentControlsProps {
   selectedBlocks: number
   onDeploy: (amount: number, blocks: number) => void
+  loading?: boolean
 }
 
-export default function DeploymentControls({ selectedBlocks, onDeploy }: DeploymentControlsProps) {
+export default function DeploymentControls({ 
+  selectedBlocks, 
+  onDeploy,
+  loading = false 
+}: DeploymentControlsProps) {
   const [mode, setMode] = useState<'manual' | 'auto'>('manual')
-  const [solAmount, setSolAmount] = useState(1.0)
+  const [solAmount, setSolAmount] = useState(0.01)
 
   const incrementAmount = (value: number) => {
     setSolAmount(prev => Math.max(0, prev + value))
@@ -18,7 +23,7 @@ export default function DeploymentControls({ selectedBlocks, onDeploy }: Deploym
   const totalCost = selectedBlocks * solAmount
 
   const handleDeploy = () => {
-    if (selectedBlocks > 0) {
+    if (selectedBlocks > 0 && solAmount > 0) {
       onDeploy(solAmount, selectedBlocks)
     }
   }
@@ -78,7 +83,7 @@ export default function DeploymentControls({ selectedBlocks, onDeploy }: Deploym
         {/* SOL Input */}
         <div className="bg-[#252525] border border-[#333] rounded-lg p-4 flex items-center justify-between mb-4">
           <div className="flex items-center gap-2">
-            <div className="sol-icon"></div>
+            <div className="w-6 h-6 rounded-full bg-gradient-to-br from-[#9945FF] to-[#14F195]"></div>
             <span className="text-base mr-2">SOL</span>
             <input
               type="number"
@@ -99,16 +104,16 @@ export default function DeploymentControls({ selectedBlocks, onDeploy }: Deploym
         </div>
         <div className="flex justify-between mb-6 text-sm">
           <span className="text-[#a0a0a0]">Total</span>
-          <span className="font-semibold">{totalCost.toFixed(2)} SOL</span>
+          <span className="font-semibold">{totalCost.toFixed(4)} SOL</span>
         </div>
 
         {/* Deploy Button */}
         <button
           onClick={handleDeploy}
-          disabled={selectedBlocks === 0}
-          className="w-full bg-gradient-to-r from-[#9D4AE2] to-[#4A90E2] text-white border-none rounded-lg py-4 text-base font-bold cursor-pointer transition-all hover:brightness-110 hover:-translate-y-0.5 disabled:bg-[#333] disabled:text-[#666] disabled:cursor-not-allowed disabled:transform-none"
+          disabled={selectedBlocks === 0 || solAmount === 0 || loading}
+          className="w-full bg-gradient-to-r from-[#9D4AE2] to-[#4A90E2] text-white border-none rounded-lg py-4 text-base font-bold cursor-pointer transition-all hover:brightness-110 hover:-translate-y-0.5 disabled:bg-[#333] disabled:text-[#666] disabled:cursor-not-allowed disabled:transform-none disabled:opacity-50"
         >
-          Deploy
+          {loading ? 'Deploying...' : 'Deploy'}
         </button>
       </div>
     </div>

@@ -25,13 +25,20 @@ export function findMinerPda(authority: PublicKey): [PublicKey, number] {
  * Find the Round PDA for a given round ID
  */
 export function findRoundPda(roundId: number): [PublicKey, number] {
-  const roundIdBuffer = Buffer.alloc(8)
-  roundIdBuffer.writeBigUInt64LE(BigInt(roundId))
+  const roundIdBigInt = BigInt(roundId);
+  const roundIdArray = new Uint8Array(8);
+  
+  // Write the BigInt in little-endian format (8 bytes)
+  for (let i = 0; i < 8; i++) {
+    roundIdArray[i] = Number((roundIdBigInt >> BigInt(i * 8)) & BigInt(0xff));
+  }
+  
+  const roundIdBuffer = Buffer.from(roundIdArray);
   
   return PublicKey.findProgramAddressSync(
     [Buffer.from(ROUND_SEED), roundIdBuffer],
     PROGRAM_ID
-  )
+  );
 }
 
 /**
