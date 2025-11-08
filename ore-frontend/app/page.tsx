@@ -19,7 +19,7 @@ const mockSquares = Array.from({ length: 25 }, (_, i) => ({
 
 export default function Home() {
   const wallet = useWallet()
-  const { gameState, minerStats, loading, error, deploy } = useGameProgram()
+  const { gameState, minerStats, loading, error, deploy, refreshGameState } = useGameProgram()
   const [selectedSquares, setSelectedSquares] = useState<number[]>([])
   const [deploymentError, setDeploymentError] = useState<string | null>(null)
 
@@ -51,7 +51,12 @@ export default function Home() {
       console.log('Deployment successful!', signature)
       setSelectedSquares([]) // Clear selection
       
-      // Show success message (you can use a toast library)
+      // Refresh game state after deployment
+      if (refreshGameState) {
+        await refreshGameState()
+      }
+      
+      // Show success message (you can use a toast library later)
       alert(`Successfully deployed! Transaction: ${signature.slice(0, 8)}...`)
     } catch (err: any) {
       console.error('Deployment error:', err)
@@ -95,12 +100,22 @@ export default function Home() {
 
         {/* Right Panel */}
         <aside className="flex flex-col gap-6">
-          <Motherlode amount={motherlode} />
-          <Timer initialTime={timeRemaining} />
+          {/* Motherlode and Timer side by side */}
+          <div className="grid grid-cols-2 gap-4">
+            <Motherlode 
+              amount={motherlode} 
+              onRefresh={refreshGameState}
+            />
+            <Timer initialTime={timeRemaining} />
+          </div>
+          
+          {/* Stats */}
           <Stats 
             totalDeployed={totalDeployed} 
             youDeployed={youDeployed} 
           />
+          
+          {/* Deployment Controls */}
           <DeploymentControls 
             selectedBlocks={selectedSquares.length}
             onDeploy={handleDeploy}

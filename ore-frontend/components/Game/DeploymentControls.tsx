@@ -17,10 +17,10 @@ export default function DeploymentControls({
   const [solAmount, setSolAmount] = useState(0.01)
 
   const incrementAmount = (value: number) => {
-    setSolAmount(prev => Math.max(0, prev + value))
+    setSolAmount(prev => Math.max(0, Number((prev + value).toFixed(4))))
   }
 
-  const totalCost = selectedBlocks * solAmount
+  const totalCost = Number((selectedBlocks * solAmount).toFixed(4))
 
   const handleDeploy = () => {
     if (selectedBlocks > 0 && solAmount > 0) {
@@ -104,16 +104,19 @@ export default function DeploymentControls({
         </div>
         <div className="flex justify-between mb-6 text-sm">
           <span className="text-[#a0a0a0]">Total</span>
-          <span className="font-semibold">{totalCost.toFixed(4)} SOL</span>
+          <span className="font-semibold">{totalCost} SOL</span>
         </div>
 
-        {/* Deploy Button */}
+        {/* Deploy Button - Shows total cost in button text */}
         <button
           onClick={handleDeploy}
           disabled={selectedBlocks === 0 || solAmount === 0 || loading}
           className="w-full bg-gradient-to-r from-[#9D4AE2] to-[#4A90E2] text-white border-none rounded-lg py-4 text-base font-bold cursor-pointer transition-all hover:brightness-110 hover:-translate-y-0.5 disabled:bg-[#333] disabled:text-[#666] disabled:cursor-not-allowed disabled:transform-none disabled:opacity-50"
         >
-          {loading ? 'Deploying...' : 'Deploy'}
+          {loading 
+            ? 'Deploying...' 
+            : `Deploy ${totalCost} SOL`
+          }
         </button>
       </div>
     </div>

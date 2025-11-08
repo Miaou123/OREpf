@@ -10,6 +10,10 @@ export default function Timer({ initialTime = 0 }: TimerProps) {
   const [timeRemaining, setTimeRemaining] = useState(initialTime)
 
   useEffect(() => {
+    setTimeRemaining(initialTime)
+  }, [initialTime])
+
+  useEffect(() => {
     if (timeRemaining <= 0) return
 
     const interval = setInterval(() => {
@@ -26,11 +30,11 @@ export default function Timer({ initialTime = 0 }: TimerProps) {
   }
 
   return (
-    <div className="bg-[#1a1a1a] border border-[#333] rounded-xl p-6 text-center">
-      <div className="font-mono text-2xl font-bold mb-2">
+    <div className="bg-[#1a1a1a] border border-[#333] rounded-xl p-4 text-center">
+      <div className="font-mono text-2xl font-bold mb-1">
         {formatTime(timeRemaining)}
       </div>
-      <div className="text-sm text-[#a0a0a0]">Time remaining</div>
+      <div className="text-xs text-[#a0a0a0]">Time remaining</div>
     </div>
   )
 }
