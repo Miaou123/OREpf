@@ -24,12 +24,14 @@ pub fn process_deploy(accounts: &[AccountInfo<'_>], data: &[u8]) -> ProgramResul
     };
     signer_info.is_signer()?;
     authority_info.is_writable()?;
-    automation_info
-        .is_writable()?
-        .has_seeds(&[AUTOMATION, &authority_info.key.to_bytes()], &ore_api::ID)?;
-    let board = board_info
-        .as_account_mut::<Board>(&ore_api::ID)?
-        .assert_mut(|b| clock.slot >= b.start_slot && clock.slot < b.end_slot)?;
+    let board = board_info.as_account_mut::<Board>(&ore_api::ID)?;
+    if !automation_info.data_is_empty() {
+        automation_info
+            .is_writable()?
+            .has_seeds(&[AUTOMATION, &authority_info.key.to_bytes()], &ore_api::ID)?;
+    } else {
+        automation_info.is_writable()?;
+    }
     let round = round_info
         .as_account_mut::<Round>(&ore_api::ID)?
         .assert_mut(|r| r.id == board.round_id)?;
@@ -44,23 +46,23 @@ pub fn process_deploy(accounts: &[AccountInfo<'_>], data: &[u8]) -> ProgramResul
         board.end_slot = board.start_slot + 150;
         round.expires_at = board.end_slot + ONE_DAY_SLOTS;
 
-        // Bump var to the next value.
-        let [var_info, entropy_program] = entropy_accounts else {
-            return Err(ProgramError::NotEnoughAccountKeys);
-        };
-        var_info
-            .has_address(&ORE_VAR_ADDRESS)?
-            .as_account::<Var>(&entropy_api::ID)?
-            .assert(|v| v.authority == *board_info.key)?;
-        entropy_program.is_program(&entropy_api::ID)?;
+        // // Bump var to the next value.
+        // let [var_info, entropy_program] = entropy_accounts else {
+        //     return Err(ProgramError::NotEnoughAccountKeys);
+        // };
+        // var_info
+        //     .has_address(&ORE_VAR_ADDRESS)?
+        //     .as_account::<Var>(&entropy_api::ID)?
+        //     .assert(|v| v.authority == *board_info.key)?;
+        // entropy_program.is_program(&entropy_api::ID)?;
 
-        // Bump var to the next value.
-        invoke_signed(
-            &entropy_api::sdk::next(*board_info.key, *var_info.key, board.end_slot),
-            &[board_info.clone(), var_info.clone()],
-            &entropy_api::ID,
-            &[BOARD],
-        )?;
+        // // Bump var to the next value.
+        // invoke_signed(
+        //     &entropy_api::sdk::next(*board_info.key, *var_info.key, board.end_slot),
+        //     &[board_info.clone(), var_info.clone()],
+        //     &entropy_api::ID,
+        //     &[BOARD],
+        // )?;
     }
 
     // Check if signer is the automation executor.

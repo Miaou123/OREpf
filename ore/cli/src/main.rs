@@ -41,6 +41,9 @@ async fn main() {
         .expect("Missing COMMAND env var")
         .as_str()
     {
+        "initialize" => {
+            initialize(&rpc, &payer).await.unwrap();
+        }
         "automations" => {
             log_automations(&rpc).await.unwrap();
         }
@@ -118,6 +121,16 @@ async fn main() {
         }
         _ => panic!("Invalid command"),
     };
+}
+
+async fn initialize(
+    rpc: &RpcClient,
+    payer: &solana_sdk::signer::keypair::Keypair,
+) -> Result<(), anyhow::Error> {
+    let ix = ore_api::sdk::initialize(payer.pubkey());
+    submit_transaction(rpc, payer, &[ix]).await?;
+    println!("✅ Program initialized!");
+    Ok(())
 }
 
 async fn set_buffer(
@@ -339,49 +352,18 @@ async fn reset(
     payer: &solana_sdk::signer::keypair::Keypair,
 ) -> Result<(), anyhow::Error> {
     let board = get_board(rpc).await?;
-    let var = get_var(rpc, ORE_VAR_ADDRESS).await?;
-
-    println!("Var: {:?}", var);
-
-    let client = reqwest::Client::new();
-    let url = format!("https://entropy-api.onrender.com/var/{ORE_VAR_ADDRESS}/seed");
-    let response = client
-        .get(url)
-        .send()
-        .await?
-        .json::<entropy_types::response::GetSeedResponse>()
-        .await?;
-    println!("Entropy seed: {:?}", response);
-
     let config = get_config(rpc).await?;
-    let sample_ix = entropy_api::sdk::sample(payer.pubkey(), ORE_VAR_ADDRESS);
-    let reveal_ix = entropy_api::sdk::reveal(payer.pubkey(), ORE_VAR_ADDRESS, response.seed);
+    
+    // Simple reset without entropy - for devnet testing
     let reset_ix = ore_api::sdk::reset(
         payer.pubkey(),
         config.fee_collector,
         board.round_id,
         Pubkey::default(),
     );
-    let sig = submit_transaction(rpc, payer, &[sample_ix, reveal_ix, reset_ix]).await?;
-    println!("Reset: {}", sig);
-
-    // let slot_hashes = get_slot_hashes(rpc).await?;
-    // if let Some(slot_hash) = slot_hashes.get(&board.end_slot) {
-    //     let id = get_winning_square(&slot_hash.to_bytes());
-    //     // let square = get_square(rpc).await?;
-    //     println!("Winning square: {}", id);
-    //     // println!("Miners: {:?}", square.miners);
-    //     // miners = square.miners[id as usize].to_vec();
-    // };
-
-    // let reset_ix = ore_api::sdk::reset(
-    //     payer.pubkey(),
-    //     config.fee_collector,
-    //     board.round_id,
-    //     Pubkey::default(),
-    // );
-    // // simulate_transaction(rpc, payer, &[reset_ix]).await;
-    // submit_transaction(rpc, payer, &[reset_ix]).await?;
+    
+    submit_transaction(rpc, payer, &[reset_ix]).await?;
+    println!("✅ Round reset! Starting round {}", board.round_id + 1);
     Ok(())
 }
 
@@ -418,8 +400,8 @@ async fn deploy_all(
     let ix = ore_api::sdk::deploy(
         payer.pubkey(),
         payer.pubkey(),
-        board.round_id,
-        amount,
+        amount,        
+        board.round_id,  
         squares,
     );
     submit_transaction(rpc, payer, &[ix]).await?;

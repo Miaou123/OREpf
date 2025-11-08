@@ -22,6 +22,32 @@ pub fn program_log(accounts: &[AccountInfo], msg: &[u8]) -> Result<(), ProgramEr
     invoke_signed(&log(*accounts[0].key, msg), accounts, &crate::ID, &[BOARD])
 }
 
+pub fn initialize(signer: Pubkey) -> Instruction {
+    let board_address = board_pda().0;
+    let config_address = config_pda().0;
+    let treasury_address = treasury_pda().0;
+    let treasury_tokens_address = treasury_tokens_address();
+    let mint_address = MINT_ADDRESS;
+    let round_address = round_pda(0).0;
+    
+    Instruction {
+        program_id: crate::ID,
+        accounts: vec![
+            AccountMeta::new(signer, true),
+            AccountMeta::new(board_address, false),
+            AccountMeta::new(config_address, false),
+            AccountMeta::new(treasury_address, false),
+            AccountMeta::new(treasury_tokens_address, false), // ADD THIS
+            AccountMeta::new(mint_address, false), // ADD THIS
+            AccountMeta::new(round_address, false),
+            AccountMeta::new_readonly(system_program::ID, false),
+            AccountMeta::new_readonly(spl_token::ID, false), // ADD THIS
+            AccountMeta::new_readonly(spl_associated_token_account::ID, false), // ADD THIS
+        ],
+        data: Initialize {}.to_bytes(),
+    }
+}
+
 // let [signer_info, automation_info, executor_info, miner_info, system_program] = accounts else {
 
 pub fn automate(

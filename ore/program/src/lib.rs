@@ -1,3 +1,4 @@
+mod initialize;
 mod automate;
 mod bury;
 mod checkpoint;
@@ -17,6 +18,7 @@ mod set_swap_program;
 mod withdraw;
 mod wrap;
 
+use initialize::*;
 use automate::*;
 use bury::*;
 use checkpoint::*;
@@ -48,6 +50,7 @@ pub fn process_instruction(
 
     match ix {
         // Miner
+        OreInstruction::Initialize => process_initialize(accounts, data)?,
         OreInstruction::Automate => process_automate(accounts, data)?,
         OreInstruction::Checkpoint => process_checkpoint(accounts, data)?,
         OreInstruction::ClaimSOL => process_claim_sol(accounts, data)?,

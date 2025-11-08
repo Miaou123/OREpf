@@ -9,14 +9,11 @@ pub const ORE_VAR_ADDRESS: Pubkey = pubkey!("BWCaDY96Xe4WkFq1M7UiCCRcChsJ3p51L5K
 pub fn process_reset(accounts: &[AccountInfo<'_>], _data: &[u8]) -> ProgramResult {
     // Load accounts.
     let clock = Clock::get()?;
-    let (ore_accounts, entropy_accounts) = accounts.split_at(14);
+    let (ore_accounts, _entropy_accounts) = accounts.split_at(16);
     sol_log(&format!("Ore accounts: {:?}", ore_accounts.len()).to_string());
-    sol_log(&format!("Entropy accounts: {:?}", entropy_accounts.len()).to_string());
-    let [signer_info, board_info, config_info, fee_collector_info, mint_info, round_info, round_next_info, _top_miner_info, treasury_info, treasury_tokens_info, system_program, token_program, ore_program, slot_hashes_sysvar] =
-        ore_accounts
-    else {
-        return Err(ProgramError::NotEnoughAccountKeys);
-    };
+    //sol_log(&format!("Entropy accounts: {:?}", entropy_accounts.len()).to_string());
+    let [signer_info, board_info, config_info, fee_collector_info, mint_info, round_info, round_next_info, _top_miner_info, treasury_info, treasury_tokens_info, system_program, token_program, ore_program, slot_hashes_sysvar, _entropy_var, _entropy_program]: &[AccountInfo; 16] = 
+    ore_accounts.try_into().map_err(|_| ProgramError::NotEnoughAccountKeys)?;
     signer_info.is_signer()?;
     let board = board_info
         .as_account_mut::<Board>(&ore_api::ID)?
@@ -63,28 +60,28 @@ pub fn process_reset(accounts: &[AccountInfo<'_>], _data: &[u8]) -> ProgramResul
     round_next.total_winnings = 0;
 
     // Sample random variable
-    let [var_info, entropy_program] = entropy_accounts else {
-        return Err(ProgramError::NotEnoughAccountKeys);
-    };
-    let var = var_info
-        .has_address(&ORE_VAR_ADDRESS)? // TODO Verify address matches whats in the config.
-        .as_account::<Var>(&entropy_api::ID)?
-        .assert(|v| v.authority == *board_info.key)?
-        .assert(|v| v.slot_hash != [0; 32])?
-        .assert(|v| v.seed != [0; 32])?
-        .assert(|v| v.value != [0; 32])?;
-    entropy_program.is_program(&entropy_api::ID)?;
+//     let [var_info, entropy_program] = entropy_accounts else {
+//         return Err(ProgramError::NotEnoughAccountKeys);
+//     };
+//     let var = var_info
+//         .has_address(&ORE_VAR_ADDRESS)? // TODO Verify address matches whats in the config.
+//         .as_account::<Var>(&entropy_api::ID)?
+//         .assert(|v| v.authority == *board_info.key)?
+//         .assert(|v| v.slot_hash != [0; 32])?
+//         .assert(|v| v.seed != [0; 32])?
+//         .assert(|v| v.value != [0; 32])?;
+//     entropy_program.is_program(&entropy_api::ID)?;
 
-    // Print the seed and slot hash.
-    let seed = keccak::Hash::new_from_array(var.seed);
-    let slot_hash = keccak::Hash::new_from_array(var.slot_hash);
-    sol_log(&format!("var slothash: {:?}", slot_hash).to_string());
-    sol_log(&format!("var seed: {:?}", seed).to_string());
+    // // Print the seed and slot hash.
+    // let seed = keccak::Hash::new_from_array(var.seed);
+    // let slot_hash = keccak::Hash::new_from_array(var.slot_hash);
+    // sol_log(&format!("var slothash: {:?}", slot_hash).to_string());
+    // sol_log(&format!("var seed: {:?}", seed).to_string());
 
-    // Read the finalized value from the var.
-    let value = keccak::Hash::new_from_array(var.value);
-    sol_log(&format!("var value: {:?}", value).to_string());
-    round.slot_hash = var.value;
+    // // Read the finalized value from the var.
+    // let value = keccak::Hash::new_from_array(var.value);
+    // sol_log(&format!("var value: {:?}", value).to_string());
+    // round.slot_hash = var.value;
 
     // Exit early if no slot hash was found.
     let Some(r) = round.rng() else {
